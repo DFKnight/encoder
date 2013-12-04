@@ -1,0 +1,1 @@
+Please view the source file for more information. I will update the README and add detailed documentation once I have finished updating encoder.py.
