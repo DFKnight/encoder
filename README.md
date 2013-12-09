@@ -16,20 +16,24 @@ Second, ensure that ffmpeg.exe is located in the same location as encoder.py, in
 - src
     This is the source directory that will be scanned. 
     NOTE: Individual files cannot be entered into the application as a source directory. 
-    eg. encoder.py src=files
+    
+        eg. encoder.py src=files
 
 - dst
     This is the destination directory. If it is specified, the location will be used as the destination directory. Otherwise, the default location of src/encodes will be used.
     NOTE: Individual files cannot be entered into the application as a destination directory. 
-    eg. encoder.py src=files dst=files/encodes
+    
+        eg. encoder.py src=files dst=files/encodes
 
-- quality = HD | SD
+- quality = HD | SD | (int)
     There are 2 quality profiles stored within the application. HD will attempt to lower the quality, in an effort to preserve file space, while SD will attempt to increase the quality in exchange for increased file space.
-    eg. encoder.py quality=HD src=file.mkv dst=file.mp4
+    
+        eg. encoder.py quality=HD src=file.mkv dst=file.mp4
 
 - recursive
     This option will scan a directory recursively, select any valid files which have not been encoded already, and encode the selected files.
-    eg. encoder.py src=directory recursive
+    
+        eg. encoder.py src=directory recursive
 
         directory
         directory/file1.avi
@@ -45,4 +49,5 @@ Second, ensure that ffmpeg.exe is located in the same location as encoder.py, in
 
 - no-subs
     By default, subtitle track #1 will be encoded as a hardsub on the encoded video. The no-subs option is used in order to avoid encoded subtitles.
-    eg encoder.py src=<filename or directory> no-subs
+    
+        eg encoder.py src=<filename or directory> no-subs

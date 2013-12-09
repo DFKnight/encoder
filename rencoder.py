@@ -1,9 +1,11 @@
 from inspect import currentframe,getfile
+import os
 from os import chdir,listdir,mkdir,remove,walk
 from os.path import abspath,dirname,exists,isdir,isfile,join
 from subprocess import call
 import subprocess
 from sys import argv,stdout
+import sys
 import re
 import shlex
 
@@ -19,7 +21,6 @@ current_location=default_location
 encodes_location=None
 
 extensions=["mkv","iso","img","avi","rmvb","wmv"]
-#["mkv","avi"]
 valid_extensions=["mkv","iso","img","avi","mp4","rmvb","wmv"]
 recursive=False
 subtitles=True
@@ -29,15 +30,6 @@ remove_old_encodes=False
 
 log_files=True
 log_location=default_location+"\\logs\\"
-
-#arguments=''.join(argv)
-#print(arguments)
-#arguments=arguments.replace('\\','/')
-#arguments=arguments.replace('//','/')
-#args=shlex.split(arguments)
-
-#print("Length of args: " + str(len(args)))
-#print()
 
 # If 0 parameters have been specified, something went wrong with python!
 if(len(argv)==0):
@@ -79,9 +71,9 @@ elif(len(argv)>1):
                 log_files=False
             elif(i.split("=",1)[0]=="quality"):
                 if(i.split("=",1)[1]=="SD"):
-                    quality=18
+                    quality=QUALITY_SD
                 elif(i.split("=",1)[1]=="HD"):
-                    quality=23
+                    quality=QUALITY_HD
             elif(i.split("=",1)[0]=="recursive"):
                 recursive=True
             elif(i.split("=",1)[0]=="no-subs"):
@@ -184,7 +176,6 @@ def parseEncodedFiles(original_list):
             encode_location=f.rsplit("\\",1)[0]+"\\encodes\\"
         else:
             encode_location=encodes_location
-        #encode_location=f.rsplit("\\",1)[0]+"\\encodes\\"
         if(isdir(encode_location) and exists(encode_location)):
             encoded_file=encode_location+f.rsplit("\\",1)[1].rsplit(".",1)[0]+".mp4"
             if(not(exists(encoded_file))):
@@ -206,18 +197,68 @@ def encode(files,quality):
             except:
                 print("Unable to create encode directory! "+encode_location)
                 continue
-        print("Currently encoding: "+f.rsplit("\\",1)[1]+" ... ",end="")
+        print("Currently encoding: "+f.rsplit("\\",1)[1]+" ... ",end='\r')
         stdout.flush()
-        call_args=["C:\\Program Files\\Handbrake\\HandBrakeCLI.exe",str("-i"+f),str("-o"+encode_location+f.rsplit("\\",1)[1].rsplit(".",1)[0]+".mp4"),"-q "+str(quality),"--preset=\"Normal\"","-ex264"]
+        title_to_encode=getFirstTitleInfo(f)
+        call_args=["C:\\Program Files\\Handbrake\\HandBrakeCLI.exe",str("-i"+f),str("-o"+encode_location+f.rsplit("\\",1)[1].rsplit(".",1)[0]+".mp4"),"-q "+str(quality),"--preset=\"Normal\"","-ex264","-t "+str(title_to_encode)]
         if(subtitles==True):
             call_args.append("-s 1")
             call_args.append("--subtitle-burn")
-        f2=open(log_location+f.rsplit("\\",1)[1]+".txt","w")
+        #f2=open(log_location+f.rsplit("\\",1)[1]+".txt","w")
         
-        call(call_args, stdout=f2, stderr=f2)
-        
-        f2.close()
-        print("Done!")
+        p=subprocess.Popen(call_args, bufsize=-1, stdin=open(os.devnull), stdout=subprocess.PIPE, stderr=open(os.devnull))
+        line=list()
+        while True:
+            stdout2=p.stdout.readline(1)
+            if(stdout2.decode('utf-8')!='\r'):
+                line.append(stdout2.decode('utf-8'))
+            else:
+                eta_value=""
+                percent_value=""
+                output=""
+                try:
+                    eta_value="".join(line).split(' ')[13]
+                except:
+                    pass
+                try:
+                    percent_value="".join(line).split(' ')[5]
+                except:
+                    pass
+                output="Currently encoding: "+f.rsplit("\\",1)[1]
+                if percent_value is not "":
+                    output=output+" ("+str(percent_value)+" %"
+                if eta_value is not "":
+                    output=output+", ETA: "+eta_value
+                elif percent_value is not "":
+                    output=output+")"
+                output=output+" ... "
+
+                print(output,end='\r')
+                sys.stdout.flush()
+                
+                line=list()
+            if(stdout2.decode('utf-8')=='' and p.poll()!=None):
+                break
+        #f2.close()
+        print("Currently encoding: "+f.rsplit("\\",1)[1]+" (100.00 %, ETA: 00h00m00s) ... Done!")
+
+# Get video track information of the file that is going to be encoded
+def getFirstTitleInfo(filename):
+    call_args=["C:\\Program Files\\Handbrake\\HandBrakeCLI.exe",str("-i"+filename),"-t0"]
+    p=subprocess.Popen(call_args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    out, err = p.communicate()
+
+    data=[]
+    temp_data=""
+    for test in err:
+        if(test==10):
+            data.append(temp_data)
+            temp_data=""
+        else:
+            temp_data=temp_data+chr(test)
+    for test in data:
+        if("+ title" in test):
+            return int(test[8:-2])
 
 # Get a list of files to be encoded
 hd_files=[]
@@ -252,11 +293,11 @@ elif(isdir(current_location)):
     print("Done!\n")
 
 total=len(hd_files)+len(sd_files)
-print("A total of "+str(len(hd_files))+" files will be HD encoded!")
-print("A total of "+str(len(sd_files))+" files will be SD encoded!")
 if(total==0):
     print("NO FILES TO ENCODE!")
 else:
+    print("A total of "+str(len(hd_files))+" files will be HD encoded!")
+    print("A total of "+str(len(sd_files))+" files will be SD encoded!")
     print("A total of "+str(total)+" files will be encoded!")
 
     encode(hd_files,QUALITY_HD)
