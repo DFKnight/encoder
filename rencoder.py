@@ -74,15 +74,12 @@ elif(len(argv)>1):
                     quality=QUALITY_SD
                 elif(i.split("=",1)[1]=="HD"):
                     quality=QUALITY_HD
+                else:
+                    quality=int(i.split("=",1)[1])
             elif(i.split("=",1)[0]=="recursive"):
                 recursive=True
             elif(i.split("=",1)[0]=="no-subs"):
                 subtitles=False
-            elif(i.split("=",1)[0]=="quality"):
-                if(i.split("=",1)[1]=="SD"):
-                    quality=QUALITY_SD
-                elif(i.split("=",1)[1]=="HD"):
-                    quality=QUALITY_HD
 
 # Check to see if the current directory exists or not
 if(exists(current_location)==False):
@@ -264,19 +261,19 @@ def getFirstTitleInfo(filename):
 hd_files=[]
 sd_files=[]
 
-if(isfile(current_location)):
+if(isfile(current_location) and encodedFileExists(current_location)==False):
     if(quality==QUALITY_NONE):
         quality=getQuality(current_location)
-    if(quality==QUALITY_HD and encodedFileExists(current_location)==False):
+    if(quality>=QUALITY_HD):
         hd_files.append(current_location)
-    elif(quality==QUALITY_SD and encodedFileExists(current_location)==False):
+    elif(quality<=QUALITY_SD):
         sd_files.append(current_location)
 elif(isdir(current_location) and current_location.rsplit("\\",1)[1]=="VIDEO_TS"):
     if(quality==QUALITY_NONE):
         quality=QUALITY_HD;
-    if(quality==QUALITY_HD and encodedFileExists(current_location)==False):
+    if(quality>=QUALITY_HD and encodedFileExists(current_location)==False):
         hd_files.append(current_location)
-    elif(quality==QUALITY_SD and encodedFileExists(current_location)==False):
+    elif(quality<=QUALITY_SD and encodedFileExists(current_location)==False):
         sd_files.append(current_location)
 elif(isdir(current_location)):
     print("Compiling a list of files to be encoded ... ",end="")
@@ -286,9 +283,9 @@ elif(isdir(current_location)):
         hd_files=parseEncodedFiles(hd_files)
         sd_files=parseEncodedFiles(sd_files)
     else:
-        if(quality==QUALITY_HD):
+        if(quality>=QUALITY_HD):
             hd_files=parseEncodedFiles(getallfiles(current_location,recursive))
-        elif(quality==QUALITY_SD):
+        elif(quality<=QUALITY_SD):
             sd_files=parseEncodedFiles(getallfiles(current_location,recursive))
     print("Done!\n")
 
